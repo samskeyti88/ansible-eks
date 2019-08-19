@@ -1,0 +1,77 @@
+common:
+  project: ansible
+  region: ap-northeast-1
+  profile: default
+
+vpc:
+  name: "{{ common.project}}-vpc"
+  cidr_block: "10.0.0.0/16"
+  
+subnets:
+  - cidr: 10.0.10.0/24
+    az: "{{ common.region }}a"
+  - cidr: 10.0.11.0/24
+    az: "{{ common.region }}c"
+  - cidr: 10.0.12.0/24
+    az: "{{ common.region }}d"
+
+security_groups:
+  - name: "{{ common.project }}-cluster-sg"
+    description: "Security group for EKS cluster"
+    rules:
+      - group_name: "{{ common.project }}-worker-sg"
+        group_desc: "Security group for EKS worker nodes"
+        rule_desc: "Allow pods to communicate with the cluster API server"
+        proto: tcp
+        ports: 443
+    rules_egress:
+      - group_name: "{{ common.project }}-worker-sg"
+        group_desc: "Security group for EKS worker nodes"
+        rule_desc: "Allow the cluster control plane to communicate with the worker Kubelet and pods"
+        proto: tcp
+        from_port: 1025
+        to_port: 65535
+      - group_name: "{{ common.project }}-worker-sg"
+        group_desc: "Security group for EKS worker nodes"
+        rule_desc: "Allow the cluster control plane to communicate with pods running extension API servers on port 443"
+        proto: tcp
+        ports: 443
+  - name: "{{ common.project }}-worker-sg"
+    description: "Security group for EKS worker nodes"
+    rules:
+      - group_name: "{{ common.project }}-worker-sg"
+        group_desc: "Security group for EKS worker nodes"
+        rule_desc: "Allow worker nodes to communicate with each other"
+        proto: all
+        from_port: 1
+        to_port: 65535
+      - group_name: "{{ common.project }}-cluster-sg"
+        group_desc: "Security group for EKS cluster"
+        rule_desc: "Allow worker Kubelets and pods to receive communication from the cluster control plane"
+        proto: tcp
+        from_port: 1025
+        to_port: 65535
+      - group_name: "{{ common.project }}-cluster-sg"
+        group_desc: "Security group for EKS cluster"
+        rule_desc: "Allow pods running extension API servers on port 443 to receive communication from cluster control plane"
+        proto: tcp
+        ports: 443
+
+eks_cluster:
+  name: "{{ common.project }}-cluster"
+  role_name: eks-cluster-iam-role
+  version: "1.13"
+  security_groups: "{{ common.project }}-cluster-sg"
+  
+eks_worker:
+  stack_name: "{{ common.project }}-stack"
+  role_name: eks-worker-iam-role
+  nodegroup_name: "{{ common.project }}-ng"
+  autoscaling_min_size: 1
+  autoscaling_max_size: 4
+  autoscaling_desired_size: 2
+  instance_type: t3.medium
+  image_id: ami-0fde798d17145fae1
+  volume_size: 20
+  key_name: ec2-key
+  bootstrap_args: ""

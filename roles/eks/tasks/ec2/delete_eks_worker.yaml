@@ -1,0 +1,7 @@
+- name: EC2 | delete EKS worker nodes
+  cloudformation:
+    stack_name: "{{ eks_worker.stack_name }}"
+    profile: "{{ common.profile }}"
+    region: "{{ common.region }}"
+    state: absent
+  register: delete_eks_worker_results

@@ -1,0 +1,82 @@
+- name: VPC | get VPC
+  ec2_vpc_net_facts:
+    profile: "{{ common.profile }}"
+    region: "{{ common.region }}"
+    filters:
+      tag:Name: "{{ vpc.name }}"
+  register: vpc_facts_results
+
+- name: VPC | get route table
+  ec2_vpc_route_table_facts:
+    profile: "{{ common.profile }}"
+    region: "{{ common.region }}"
+    filters:
+      vpc-id: "{{ vpc_facts_results.vpcs[0].vpc_id }}"
+  register: rt_facts_results
+    
+- name: VPC | delete public route table
+  loop: "{{ rt_facts_results.route_tables }}"
+  when: "item.associations[0].main != true"
+  ec2_vpc_route_table:
+    profile: "{{ common.profile }}"
+    region: "{{ common.region }}"
+    state: absent
+    vpc_id: "{{ vpc_facts_results.vpcs[0].vpc_id }}"
+    route_table_id: "{{ item.id }}"
+    lookup: id
+
+- name: VPC | delete igw
+  ec2_vpc_igw:
+    profile: "{{ common.profile }}"
+    region: "{{ common.region }}"
+    state: absent
+    vpc_id: "{{ vpc_facts_results.vpcs[0].vpc_id }}"
+
+- name: VPC | get security groups
+  ec2_group_facts:
+    profile: "{{ common.profile }}"
+    region: "{{ common.region }}"
+    filters:
+      vpc_id: "{{ vpc_facts_results.vpcs[0].vpc_id }}"
+  register: security_group_facts_results
+
+- name: VPC | set security group rule lists empty
+  loop: "{{ security_group_facts_results.security_groups }}"
+  ec2_group:
+    name: "{{ item.group_name }}"
+    profile: "{{ common.profile }}"
+    region: "{{ common.region }}"
+    description: "{{ item.description }}"
+    rules: []
+    rules_egress: []
+    purge_rules: true
+    purge_rules_egress: true
+    vpc_id: "{{ vpc_facts_results.vpcs[0].vpc_id }}"
+
+- name: VPC | delete security groups
+  loop: "{{ security_group_facts_results.security_groups }}"
+  when: "item.group_name != 'default'"
+  ec2_group:
+    name: '{{ item.group_name }}'
+    profile: "{{ common.profile }}"
+    region: "{{ common.region }}"
+    state: absent
+    vpc_id: "{{ vpc_facts_results.vpcs[0].vpc_id }}"
+
+- name: VPC | delete subnets 
+  loop: "{{ subnets }}"
+  ec2_vpc_subnet:
+    profile: "{{ common.profile }}"
+    region: "{{ common.region }}"
+    state: absent
+    vpc_id: "{{ vpc_facts_results.vpcs[0].vpc_id }}"
+    cidr: "{{ item.cidr }}"
+    az: "{{ item.az }}"
+
+- name: VPC | delete VPC
+  ec2_vpc_net:
+    name: "{{ vpc.name }}"
+    profile: "{{ common.profile }}"
+    region: "{{ common.region }}"
+    state: absent
+    cidr_block: "{{ vpc.cidr_block }}"

@@ -1,0 +1,12 @@
+- name: EKS | delete EKS cluster
+  aws_eks_cluster:
+    name: "{{ eks_cluster.name }}"
+    profile: "{{ common.profile }}"
+    region: "{{ common.region }}"
+    state: absent
+  register: delete_eks_cluster_results
+
+- name: EKS | wait 10 min for EKS cluster to be deleted
+  pause:
+    minutes: 10
+  when: delete_eks_cluster_results is changed

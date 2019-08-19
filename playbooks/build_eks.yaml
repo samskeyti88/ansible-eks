@@ -1,0 +1,24 @@
+- name: BUILD EKS
+  hosts: local
+  gather_facts: false
+  tasks:
+    - name: CREATE IAM ROLE
+      include_role:
+        name: eks
+        tasks_from: iam/create_iam_role.yaml
+    - name: CREATE VPC
+      include_role:
+        name: eks
+        tasks_from: vpc/create_vpc.yaml
+    - name: CREATE EKS CLUSTER
+      include_role:
+        name: eks
+        tasks_from: eks/create_eks_cluster.yaml
+    - name: CREATE EKS WORKER NODES
+      include_role:
+        name: eks
+        tasks_from: ec2/create_eks_worker.yaml
+    - name: JOIN EKS WORKER NODES TO EKS CLUSTER
+      include_role:
+        name: eks
+        tasks_from: ec2/join_eks_cluster.yaml

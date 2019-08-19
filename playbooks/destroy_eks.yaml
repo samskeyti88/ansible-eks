@@ -1,0 +1,21 @@
+- name: DESTROY EKS
+  hosts: local
+  gather_facts: false
+  tasks:
+    - name: DELETE EKS WORKER NODES
+      include_role:
+        name: eks
+        tasks_from: ec2/delete_eks_worker.yaml
+    - name: DELETE EKS CLUSTER
+      include_role:
+        name: eks
+        tasks_from: eks/delete_eks_cluster.yaml
+    - name: DELETE VPC
+      include_role:
+        name: eks
+        tasks_from: vpc/delete_vpc.yaml
+    - name: DELETE IAM ROLE
+      include_role:
+        name: eks
+        tasks_from: iam/delete_iam_role.yaml
+    

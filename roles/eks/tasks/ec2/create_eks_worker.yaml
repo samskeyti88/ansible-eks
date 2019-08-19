@@ -1,0 +1,21 @@
+- name: EC2 | create EKS worker nodes
+  cloudformation:
+    stack_name: "{{ eks_worker.stack_name }}"
+    profile: "{{ common.profile }}"
+    region: "{{ common.region }}"
+    template: ../roles/eks/files/amazon-eks-nodegroup.yaml
+    template_parameters:
+      ClusterName: "{{ eks_cluster_results.name }}"
+      ClusterControlPlaneSecurityGroup: "{{ ','.join(eks_cluster_results.resources_vpc_config.security_group_ids) }}"
+      NodeGroupName: "{{ eks_worker.nodegroup_name }}"
+      NodeAutoScalingGroupMinSize: "{{ eks_worker.autoscaling_min_size }}"
+      NodeAutoScalingGroupDesiredCapacity: "{{ eks_worker.autoscaling_desired_size }}"
+      NodeAutoScalingGroupMaxSize: "{{ eks_worker.autoscaling_max_size }}"
+      NodeInstanceType: "{{ eks_worker.instance_type }}"
+      NodeImageId: "{{ eks_worker.image_id }}"
+      NodeVolumeSize: "{{ eks_worker.volume_size }}"
+      KeyName: "{{ eks_worker.key_name }}"
+      BootstrapArguments: "{{ eks_worker.bootstrap_args }}"
+      VpcId: "{{ eks_cluster_results.resources_vpc_config.vpc_id }}"
+      Subnets: "{{ ','.join(eks_cluster_results.resources_vpc_config.subnet_ids) }}"
+  register: eks_worker_results

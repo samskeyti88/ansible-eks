@@ -1,0 +1,13 @@
+- name: IAM | delete EKS service role
+  iam_role:
+    name: "{{ eks_cluster.role_name }}"
+    profile: "{{ common.profile }}"
+    region: "{{ common.region }}"
+    state: absent
+
+- name: IAM | delete IAM worker node role
+  iam_role:
+    name: "{{ eks_worker.role_name }}"
+    profile: "{{ common.profile }}"
+    region: "{{ common.region }}"
+    state: absent

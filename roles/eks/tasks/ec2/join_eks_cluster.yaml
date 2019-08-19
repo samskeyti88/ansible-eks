@@ -1,0 +1,10 @@
+- name: config | update kubeconfig
+  shell: aws eks --region {{ common.region }} update-kubeconfig --name {{ eks_cluster_results.name }}
+
+- name: EC2 | copy a new version of aws-auth-cm.yaml from template
+  template:
+    src: ../roles/eks/templates/aws-auth-cm.yaml
+    dest: ../roles/eks/files/aws-auth-cm.yaml
+
+- name: EC2 | join EKS worker nodes to EKS cluster
+  shell: kubectl apply -f ../roles/eks/files/aws-auth-cm.yaml

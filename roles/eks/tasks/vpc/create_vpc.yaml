@@ -1,0 +1,49 @@
+- name: VPC | create VPC
+  ec2_vpc_net:
+    name: "{{ vpc.name }}"
+    profile: "{{ common.profile }}"
+    region: "{{ common.region }}"
+    cidr_block: "{{ vpc.cidr_block }}"
+  register: vpc_results
+
+- name: VPC | create subnets 
+  loop: "{{ subnets }}"
+  ec2_vpc_subnet:
+    profile: "{{ common.profile }}"
+    region: "{{ common.region }}"
+    vpc_id: "{{ vpc_results.vpc.id }}"
+    cidr: "{{ item.cidr }}"
+    az: "{{ item.az }}"
+  register: subnet_results
+  
+- name: VPC | create igw
+  ec2_vpc_igw:
+    profile: "{{ common.profile }}"
+    region: "{{ common.region }}"
+    vpc_id: "{{ vpc_results.vpc.id }}"
+  register: igw_results
+
+- name: VPC | create public route table
+  ec2_vpc_route_table:
+    profile: "{{ common.profile }}"
+    region: "{{ common.region }}"
+    vpc_id: "{{ vpc_results.vpc.id }}"
+    subnets: "{{ subnet_results.results | json_query('[].subnet.id') }}"
+    routes:
+      - dest: 0.0.0.0/0
+        gateway_id: "{{ igw_results.gateway_id }}"
+  register: rt_results
+
+- name: VPC | create security groups 
+  loop: "{{ security_groups }}"
+  ec2_group:
+    profile: "{{ common.profile }}"
+    region: "{{ common.region }}"
+    name: "{{ item.name }}"
+    description: "{{ item.description }}"
+    rules: "{{ item.rules }}"
+    rules_egress: "{{ item.rules_egress|default(omit) }}"
+    vpc_id: '{{ vpc_results.vpc.id }}'
+    purge_rules: false
+    purge_rules_egress: false
+  register: sg_results
