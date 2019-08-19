@@ -1,5 +1,14 @@
 # ansible-aws
 
+## Requirements
+* Ansible
+* boto
+* boto3
+* botocore
+* Python 3
+* AWS CLI
+* kubectl
+
 ## Build EKS
 To build EKS, run command below.
 
